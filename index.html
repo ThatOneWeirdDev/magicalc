@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Calculator</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#000;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Helvetica Neue",Inter,Roboto,Arial,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#app{--rim:linear-gradient(180deg,rgba(255,255,255,.28) 0,rgba(255,255,255,.19) .4%,rgba(255,255,255,.12) .9%,rgba(255,255,255,.06) 1.5%,rgba(255,255,255,.03) 3%,rgba(255,255,255,0) 6%,rgba(255,255,255,0) 94%,rgba(255,255,255,.03) 97%,rgba(255,255,255,.06) 98.5%,rgba(255,255,255,.12) 99.1%,rgba(255,255,255,.19) 99.6%,rgba(255,255,255,.28) 100%);--u:calc(min(100vw / 1185, 100dvh / 2000));position:fixed;inset:0;background:#000;overflow:hidden}
+#stage{position:absolute;left:50%;top:0;bottom:0;width:calc(var(--u)*1185);transform:translateX(-50%)}
+.abs{position:absolute}
+.top{top:calc(var(--u)*110 + env(safe-area-inset-top));width:calc(var(--u)*130);height:calc(var(--u)*130);border-radius:50%;background-color:#1f1f1f;background-image:var(--rim);border:0;outline:0;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:filter .3s}
+.top:active{filter:brightness(1.6);transition:none}
+.top svg{width:100%;height:100%}
+#hist{left:calc(var(--u)*47)}
+#magic{left:calc(var(--u)*1008)}
+#panel{left:calc(var(--u)*47);right:calc(var(--u)*47);top:calc(var(--u)*280 + env(safe-area-inset-top));bottom:calc(var(--u)*1737.5 + env(safe-area-inset-bottom));display:none;flex-direction:column;justify-content:flex-end;align-items:flex-end;overflow-y:auto;padding-right:calc(var(--u)*8);scrollbar-width:none}
+#panel::-webkit-scrollbar{display:none}
+#panel.open{display:flex}
+#panel .row{text-align:right;color:#8e8e93;font-size:calc(var(--u)*52);line-height:calc(var(--u)*78);cursor:pointer;white-space:nowrap}
+#panel .row b{display:block;color:#fff;font-weight:300;font-size:calc(var(--u)*78);line-height:calc(var(--u)*92)}
+#panel .empty{color:#8e8e93;font-size:calc(var(--u)*52);padding-bottom:calc(var(--u)*20)}
+#panel .clr{color:#f09a37;font-size:calc(var(--u)*52);margin-top:calc(var(--u)*20);cursor:pointer;line-height:calc(var(--u)*78)}
+#disp{left:0;bottom:calc(var(--u)*1527.5 + env(safe-area-inset-bottom));width:calc(var(--u)*1185);height:calc(var(--u)*210);display:flex;align-items:flex-end;justify-content:flex-end;padding-right:calc(var(--u)*55);overflow:hidden}
+#num{font-size:calc(var(--u)*200);line-height:calc(var(--u)*200);font-weight:400;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:calc(var(--u)*-2);transition:opacity .15s}
+#num.flash{opacity:.35}
+#pad{left:calc(var(--u)*47);bottom:calc(var(--u)*120 + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,calc(var(--u)*255.5));grid-auto-rows:calc(var(--u)*255.5);gap:calc(var(--u)*23)}
+.k{width:100%;height:100%;border-radius:50%;border:0;outline:0;cursor:pointer;color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit;font-weight:400;font-size:calc(var(--u)*118);line-height:1;background-image:var(--rim);transition:filter .35s,background-color .25s,color .25s;position:relative}
+.k:active{filter:brightness(1.55);transition:none}
+.k svg{width:100%;height:100%;display:block;pointer-events:none}
+.n{background-color:#353535}
+.f{background-color:#616161}
+.o{background-color:#f09837}
+.o.on{background-color:#fff;background-image:none}
+.o.on svg *{stroke:#f09837}
+.o:active{filter:brightness(1.25)}
+.f:active{filter:brightness(1.5)}
+.k.dot{font-size:calc(var(--u)*118)}
+.o svg *,.f svg *,.n svg *{stroke:#fff}
+</style>
+</head>
+<body>
+<div id="app"><div id="stage">
+  <button id="hist" class="abs top" aria-label="History"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="22.500" fill="none" stroke="#fff" stroke-width="3.800"/><path d="M50 35.600V51.500H36.400" fill="none" stroke="#fff" stroke-width="3.800" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <button id="magic" class="abs top" aria-label="Calculator"><svg viewBox="0 0 100 100"><rect x="32.600" y="25.800" width="34.800" height="49.200" rx="5.500" fill="#fff"/><rect x="37.500" y="30.300" width="25" height="11.400" rx="2.500" fill="#fff" stroke="#1f1f1f" stroke-width="2.200"/><g fill="#1f1f1f"><circle cx="40" cy="47.700" r="3.300"/><circle cx="50" cy="47.700" r="3.300"/><circle cx="60" cy="47.700" r="3.300"/><circle cx="40" cy="57.600" r="3.300"/><circle cx="50" cy="57.600" r="3.300"/><circle cx="60" cy="57.600" r="3.300"/><circle cx="40" cy="67" r="3.300"/><circle cx="50" cy="67" r="3.300"/><circle cx="60" cy="67" r="3.300"/></g></svg></button>
+
+  <div id="panel" class="abs"></div>
+  <div id="disp" class="abs"><span id="num">0</span></div>
+
+  <div id="pad" class="abs">
+    <button class="k f" data-a="back" aria-label="Delete"><svg viewBox="0 0 100 100"><path d="M29.800 50L40.800 35.600Q42 34.400 43.800 34.400H64.800Q67.300 34.400 67.300 36.900V63.800Q67.300 66.300 64.800 66.300H43.800Q42 66.300 40.800 65Z" fill="none" stroke-width="3.500" stroke-linejoin="round"/><path d="M45.500 43.200L58.800 56.800M58.800 43.200L45.500 56.800" fill="none" stroke-width="3.500" stroke-linecap="round"/></svg></button>
+    <button class="k f" data-a="ac" style="font-size:calc(var(--u)*112)">AC</button>
+    <button class="k f pct" data-a="pct" aria-label="Percent"><svg viewBox="0 0 100 100"><path d="M63.500 31.500L36.500 68.500" fill="none" stroke-width="3.600" stroke-linecap="round"/><ellipse cx="38" cy="40.400" rx="6.800" ry="8.600" fill="none" stroke-width="3.300"/><ellipse cx="61" cy="60.800" rx="6.800" ry="8.600" fill="none" stroke-width="3.300"/></svg></button>
+    <button class="k o" data-op="/" aria-label="Divide"><svg viewBox="0 0 100 100"><path d="M33 50H67" fill="none" stroke-width="3.800" stroke-linecap="round"/><circle cx="50" cy="37.700" r="3.300" fill="#fff" stroke-width="0.500"/><circle cx="50" cy="62.300" r="3.300" fill="#fff" stroke-width="0.500"/></svg></button>
+
+    <button class="k n" data-d="7">7</button>
+    <button class="k n" data-d="8">8</button>
+    <button class="k n" data-d="9">9</button>
+    <button class="k o" data-op="*" aria-label="Multiply"><svg viewBox="0 0 100 100"><path d="M36.500 36.500L63.500 63.500M63.500 36.500L36.500 63.500" fill="none" stroke-width="3.800" stroke-linecap="round"/></svg></button>
+
+    <button class="k n" data-d="4">4</button>
+    <button class="k n" data-d="5">5</button>
+    <button class="k n" data-d="6">6</button>
+    <button class="k o" data-op="-" aria-label="Subtract"><svg viewBox="0 0 100 100"><path d="M33 50H67" fill="none" stroke-width="3.800" stroke-linecap="round"/></svg></button>
+
+    <button class="k n" data-d="1">1</button>
+    <button class="k n" data-d="2">2</button>
+    <button class="k n" data-d="3">3</button>
+    <button class="k o" data-op="+" aria-label="Add"><svg viewBox="0 0 100 100"><path d="M33 50H67M50 33V67" fill="none" stroke-width="3.800" stroke-linecap="round"/></svg></button>
+
+    <button class="k n" data-a="neg" aria-label="Plus minus"><svg viewBox="0 0 100 100"><path d="M30.500 41.200H43.500M37 34.700V47.700" fill="none" stroke-width="3.400" stroke-linecap="round"/><path d="M37.300 68.500L62.700 32" fill="none" stroke-width="3.400" stroke-linecap="round"/><path d="M56 60.800H69" fill="none" stroke-width="3.400" stroke-linecap="round"/></svg></button>
+    <button class="k n" data-d="0">0</button>
+    <button class="k n dot" data-a="dot">.</button>
+    <button class="k o" data-a="eq" aria-label="Equals"><svg viewBox="0 0 100 100"><path d="M35 43.500H65M35 56.500H65" fill="none" stroke-width="3.800" stroke-linecap="round"/></svg></button>
+  </div>
+</div></div>
+
+<script>
+(function(){
+  var app=document.getElementById("stage"),num=document.getElementById("num"),disp=document.getElementById("disp"),panel=document.getElementById("panel");
+  var cur="0",acc=null,op=null,justOp=false,overwrite=false,lastOp=null,lastB=null,history=[],forced=false,forceCount=0,armValue=0;
+  var sym={"+":"+","-":"−","*":"×","/":"÷"};
+
+  function U(){return app.getBoundingClientRect().width/1185}
+
+  function toStr(n){
+    if(!isFinite(n))return "Error";
+    if(n===0)return "0";
+    var a=Math.abs(n),s;
+    if(a>=1e9||a<1e-6){
+      s=n.toExponential(5).replace(/\.?0+e/,"e").replace("e+","e");
+    }else{
+      s=String(Number(n.toPrecision(9)));
+    }
+    return s;
+  }
+
+  function group(s){
+    if(s==="Error"||s.indexOf("e")>-1)return s;
+    var neg=s[0]==="-";
+    if(neg)s=s.slice(1);
+    var p=s.split("."),i=p[0].replace(/\B(?=(\d{3})+(?!\d))/g,",");
+    return (neg?"-":"")+i+(p.length>1?"."+p[1]:"");
+  }
+
+  function fit(){
+    var u=U(),size=200,max=1075*u;
+    num.style.fontSize=(size*u)+"px";
+    num.style.lineHeight=(size*u)+"px";
+    var w=num.getBoundingClientRect().width;
+    if(w>max){
+      size=Math.max(70,size*max/w);
+      num.style.fontSize=(size*u)+"px";
+      num.style.lineHeight=(size*u)+"px";
+    }
+  }
+
+  function render(){
+    num.textContent=group(cur);
+    fit();
+    document.querySelectorAll(".o[data-op]").forEach(function(b){
+      b.classList.toggle("on",justOp&&op===b.dataset.op);
+    });
+  }
+
+  function calc(a,o,b){
+    if(o==="+")return a+b;
+    if(o==="-")return a-b;
+    if(o==="*")return a*b;
+    if(o==="/")return b===0?NaN:a/b;
+    return b;
+  }
+
+  function reset(){
+    cur="0";acc=null;op=null;justOp=false;overwrite=false;lastOp=null;lastB=null;forced=false;forceCount=0;
+  }
+
+  function pad(n){return (n<10?"0":"")+n}
+
+  function stamp(){
+    var d=new Date();
+    return parseInt(pad(d.getMonth()+1)+pad(d.getDate())+pad(d.getHours()%12||12)+pad(d.getMinutes()),10);
+  }
+
+  function forceValue(){
+    var o=op||"-";
+    if(o!=="-"&&o!=="+")return null;
+    var A=op?acc:armValue,T=stamp();
+    var F=o==="-"?A-T:T-A;
+    F=Math.abs(Math.round(F*1e6)/1e6);
+    return isFinite(F)?String(F):null;
+  }
+
+  function reveal(str,k){
+    var out="",c=0;
+    for(var i=0;i<str.length;i++){
+      var ch=str[i];
+      if(ch>="0"&&ch<="9"){
+        if(c===k)break;
+        c++;
+      }
+      out+=ch;
+    }
+    return out;
+  }
+
+  function forceActive(){
+    return forced&&(!op||op==="+"||op==="-")&&forceValue()!==null;
+  }
+
+  function forceDigit(){
+    var str=forceValue(),max=str.replace(/\D/g,"").length;
+    if(cur==="Error")reset();
+    overwrite=false;justOp=false;
+    if(forceCount<max)forceCount++;
+    cur=reveal(str,forceCount);
+    render();
+  }
+
+  function forceBack(){
+    var str=forceValue();
+    forceCount--;
+    cur=forceCount>0?reveal(str,forceCount):"0";
+    render();
+  }
+
+  function forceEquals(){
+    if(!forceCount||!forceActive())return false;
+    var o=op||"-",A=op?acc:armValue,T=stamp();
+    var F=o==="-"?A-T:T-A;
+    F=Math.round(F*1e6)/1e6;
+    push(A,o,F,T);
+    lastOp=o;lastB=F;
+    cur=toStr(T);acc=null;op=null;justOp=false;overwrite=true;
+    render();
+    return true;
+  }
+
+  function digit(d){
+    if(forceActive())return forceDigit();
+    if(cur==="Error")reset();
+    if(overwrite){cur="0";overwrite=false}
+    justOp=false;
+    if(cur.replace(/[-.]/g,"").length>=9)return render();
+    if(cur==="0")cur=d;
+    else if(cur==="-0")cur="-"+d;
+    else cur+=d;
+    render();
+  }
+
+  function dot(){
+    if(forceActive())return;
+    if(cur==="Error")reset();
+    if(overwrite){cur="0";overwrite=false}
+    justOp=false;
+    if(cur.indexOf(".")<0&&cur.replace(/[-.]/g,"").length<9)cur+=".";
+    render();
+  }
+
+  function operator(o){
+    if(cur==="Error")return;
+    forced=false;forceCount=0;
+    if(op&&!justOp){
+      var r=calc(acc,op,parseFloat(cur));
+      push(acc,op,parseFloat(cur),r);
+      cur=toStr(r);
+      acc=isFinite(r)?r:null;
+      if(cur==="Error"){op=null;justOp=false;overwrite=true;lastOp=null;return render()}
+    }else if(!op){
+      acc=parseFloat(cur);
+    }
+    op=o;justOp=true;overwrite=true;lastOp=null;
+    render();
+  }
+
+  function equals(){
+    if(cur==="Error")return;
+    if(forced){
+      var did=forceEquals();
+      forced=false;forceCount=0;
+      if(did)return;
+    }
+    var r,b;
+    if(op){
+      b=justOp?acc:parseFloat(cur);
+      r=calc(acc,op,b);
+      push(acc,op,b,r);
+      lastOp=op;lastB=b;
+    }else if(lastOp){
+      var a=parseFloat(cur);
+      r=calc(a,lastOp,lastB);
+      push(a,lastOp,lastB,r);
+    }else{
+      return;
+    }
+    cur=toStr(r);
+    acc=null;op=null;justOp=false;overwrite=true;
+    render();
+  }
+
+  function percent(){
+    if(cur==="Error"||(forced&&forceCount>0))return;
+    var x=parseFloat(cur);
+    if(op&&(op==="+"||op==="-")&&!justOp)x=acc*x/100;
+    else if(op&&(op==="+"||op==="-")&&justOp)x=acc*acc/100;
+    else x=x/100;
+    cur=toStr(x);
+    overwrite=true;justOp=false;
+    render();
+  }
+
+  function negate(){
+    if(cur==="Error"||(forced&&forceCount>0))return;
+    if(justOp){cur="-0";justOp=false;overwrite=false;return render()}
+    if(cur[0]==="-")cur=cur.slice(1);
+    else cur="-"+cur;
+    render();
+  }
+
+  function back(){
+    if(forced&&forceCount>0&&forceActive())return forceBack();
+    if(cur==="Error"||overwrite)return;
+    cur=cur.slice(0,-1);
+    if(cur===""||cur==="-")cur="0";
+    render();
+  }
+
+  function push(a,o,b,r){
+    history.push({e:group(toStr(a))+" "+sym[o]+" "+group(toStr(b))+" =",r:group(toStr(r)),raw:toStr(r)});
+    if(history.length>100)history.shift();
+    if(panel.classList.contains("open"))drawPanel();
+  }
+
+  function drawPanel(){
+    panel.innerHTML="";
+    if(!history.length){
+      var e=document.createElement("div");
+      e.className="empty";e.textContent="No History";
+      panel.appendChild(e);
+      return;
+    }
+    history.forEach(function(h){
+      var d=document.createElement("div");
+      d.className="row";
+      d.innerHTML=h.e+"<b>"+h.r+"</b>";
+      d.onclick=function(){
+        if(h.raw==="Error")return;
+        cur=h.raw;overwrite=true;justOp=false;
+        panel.classList.remove("open");
+        render();
+      };
+      panel.appendChild(d);
+    });
+    var c=document.createElement("div");
+    c.className="clr";c.textContent="Clear";
+    c.onclick=function(){history=[];drawPanel()};
+    panel.appendChild(c);
+    panel.scrollTop=panel.scrollHeight;
+  }
+
+  document.getElementById("pad").addEventListener("click",function(e){
+    var b=e.target.closest(".k");
+    if(!b)return;
+    if(b.dataset.d!==undefined)return digit(b.dataset.d);
+    if(b.dataset.op)return operator(b.dataset.op);
+    var a=b.dataset.a;
+    if(a==="ac"){reset();render()}
+    else if(a==="back")back();
+    else if(a==="pct")percent();
+    else if(a==="neg")negate();
+    else if(a==="dot")dot();
+    else if(a==="eq")equals();
+  });
+
+  document.getElementById("hist").addEventListener("click",function(){
+    panel.classList.toggle("open");
+    if(panel.classList.contains("open"))drawPanel();
+  });
+
+  document.getElementById("magic").addEventListener("click",function(){
+    forced=!forced;
+    forceCount=0;
+    armValue=parseFloat(cur)||0;
+    if(forced&&navigator.vibrate)navigator.vibrate(12);
+  });
+
+  document.addEventListener("keydown",function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey)return;
+    var k=e.key;
+    if(k>="0"&&k<="9")digit(k);
+    else if(k==="."||k===",")dot();
+    else if(k==="+"||k==="-"||k==="*"||k==="/")operator(k);
+    else if(k==="x"||k==="X")operator("*");
+    else if(k==="Enter"||k==="=")equals();
+    else if(k==="Backspace")back();
+    else if(k==="Escape"||k==="c"||k==="C"||k==="Delete"){reset();render()}
+    else if(k==="%")percent();
+    else return;
+    e.preventDefault();
+  });
+
+  window.addEventListener("resize",fit);
+  render();
+})();
+</script>
+</body>
+</html>
