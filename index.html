@@ -89,7 +89,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
 <script>
 (function(){
   var app=document.getElementById("stage"),num=document.getElementById("num"),disp=document.getElementById("disp"),panel=document.getElementById("panel");
-  var cur="0",acc=null,op=null,justOp=false,overwrite=false,lastOp=null,lastB=null,history=[],forced=false,forceCount=0,armValue=0;
+  var cur="0",acc=null,op=null,justOp=false,overwrite=false,lastOp=null,lastB=null,history=[],forced=false,capturing=false,forceCount=0,armValue=0;
   var sym={"+":"+","-":"−","*":"×","/":"÷"};
 
   function U(){return app.getBoundingClientRect().width/1185}
@@ -143,7 +143,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
   }
 
   function reset(){
-    cur="0";acc=null;op=null;justOp=false;overwrite=false;lastOp=null;lastB=null;forced=false;forceCount=0;
+    cur="0";acc=null;op=null;justOp=false;overwrite=false;lastOp=null;lastB=null;forced=false;capturing=false;forceCount=0;
   }
 
   function pad(n){return (n<10?"0":"")+n}
@@ -175,8 +175,12 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
     return out;
   }
 
+  function forceOk(){
+    return (!op||op==="+"||op==="-")&&forceValue()!==null;
+  }
+
   function forceActive(){
-    return forced&&(!op||op==="+"||op==="-")&&forceValue()!==null;
+    return forced&&capturing&&forceOk();
   }
 
   function forceDigit(){
@@ -196,7 +200,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
   }
 
   function forceEquals(){
-    if(!forceCount||!forceActive())return false;
+    if(!forceCount||!forceOk())return false;
     var o=op||"-",A=op?acc:armValue,T=stamp();
     var F=o==="-"?A-T:T-A;
     F=Math.round(F*1e6)/1e6;
@@ -230,7 +234,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
 
   function operator(o){
     if(cur==="Error")return;
-    forced=false;forceCount=0;
+    forced=false;capturing=false;forceCount=0;
     if(op&&!justOp){
       var r=calc(acc,op,parseFloat(cur));
       push(acc,op,parseFloat(cur),r);
@@ -248,7 +252,7 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
     if(cur==="Error")return;
     if(forced){
       var did=forceEquals();
-      forced=false;forceCount=0;
+      forced=false;capturing=false;forceCount=0;
       if(did)return;
     }
     var r,b;
@@ -349,15 +353,30 @@ body{display:flex;align-items:center;justify-content:center;font-family:-apple-s
   });
 
   document.getElementById("magic").addEventListener("click",function(){
-    forced=!forced;
-    forceCount=0;
-    armValue=parseFloat(cur)||0;
-    if(forced&&navigator.vibrate)navigator.vibrate(12);
+    if(!forced){
+      forced=true;capturing=true;forceCount=0;
+      armValue=parseFloat(cur)||0;
+      if(navigator.vibrate)navigator.vibrate(12);
+    }else if(capturing){
+      capturing=false;
+      if(!forceCount)forced=false;
+    }else{
+      capturing=true;
+    }
   });
+
+  document.addEventListener("click",function(e){
+    if(!forceActive())return;
+    if(e.target.closest("#magic"))return;
+    e.stopPropagation();
+    e.preventDefault();
+    forceDigit();
+  },true);
 
   document.addEventListener("keydown",function(e){
     if(e.ctrlKey||e.metaKey||e.altKey)return;
     var k=e.key;
+    if(forceActive()&&(k==="Enter"||k==="=")){forceDigit();e.preventDefault();return}
     if(k>="0"&&k<="9")digit(k);
     else if(k==="."||k===",")dot();
     else if(k==="+"||k==="-"||k==="*"||k==="/")operator(k);
